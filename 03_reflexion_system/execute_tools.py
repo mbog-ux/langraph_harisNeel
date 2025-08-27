@@ -8,7 +8,7 @@ taivily_tool = TavilySearchResults(max_results = 5)
 def execute_tools(state: List[BaseMessage]) -> List[BaseMessage]:
     last_ai_message: AIMessage = state [-1]
 
-    if not hasattr(last_ai_message,'tool_calls') or not last_ai_message.tool_cals:
+    if not hasattr(last_ai_message,'tool_calls') or not last_ai_message.tool_calls:
         return []
     
     tool_mesages = []

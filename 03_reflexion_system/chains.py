@@ -34,7 +34,9 @@ first_responder_prompt_template = actor_prompt_template.partial(
     first_instruction = "Provide a detailed ~250 words answer"
     )
 
-first_responder_chain = first_responder_prompt_template | llm.bind_tools(tools = [AnswerQuestion], tool_choice='AnswerQuestion') | pyndatic_parser
+first_responder_chain = first_responder_prompt_template | llm.bind_tools(tools = [AnswerQuestion], tool_choice='AnswerQuestion') 
+validator = PydanticToolsParser(tools = [AnswerQuestion])
+
 
 # Revisor section
 

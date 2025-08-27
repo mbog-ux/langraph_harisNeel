@@ -1,0 +1,28 @@
+from pydantic import BaseModel,Field
+from typing import List
+
+class Reflection(BaseModel):
+    """Reflection of answer"""
+    missing: str = Field(decription="Critique of what is missing")
+    superfluous: str = Field(decription="Critique of what is superfluous")
+
+class AnswerQuestion(BaseModel):
+    """Answer the question"""
+    answer: str = Field(
+        description = '~250 word detailed answer to the question.'
+    )
+    search_queries: List[str] = Field(
+        description = "1-3 search queries for researching improvemnts to address the critiques of your current answer."
+    )
+
+    reflection: Reflection = Field(
+        description = "Your reflection on the initial answer."
+    )
+
+
+class ReviseAnswer(AnswerQuestion):
+    """Revise your original answer to your question."""
+
+    references: List[str] = Field(
+        description = "Citations motivationg your updated answer."
+    )

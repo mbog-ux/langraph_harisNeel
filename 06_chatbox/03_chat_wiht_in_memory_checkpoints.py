@@ -5,6 +5,8 @@ from langchain_openai import ChatOpenAI
 from langgraph.graph.message import add_messages
 from langchain_core.messages import HumanMessage
 from langgraph.checkpoint.memory import MemorySaver
+from langchain_core.messages.base import message_to_dict
+import json
 
 load_dotenv()
 memory = MemorySaver() 
@@ -33,17 +35,24 @@ config = {
     }
 }
 
-response1 = app.invoke(
-    {'messages':[HumanMessage(content = "Hello, I am Maksim")]
-}, config = config)
-
-response2 = app.invoke(
-    {'messages':[HumanMessage(content = "What is my name?")]
-},config = config)
-
 app.get_graph().draw_mermaid_png(output_file_path='03_graph.png')
-# print(results['messages'])
-print(f'\nAI: ',response1['messages'][-1].content,'\n')
-print(f'\nAI: ',response2['messages'][-1].content,'\n')
 
-print(response2)
+
+while True: 
+    user_input = input("User: ")
+    if(user_input in ["exit", "end"]):
+        break
+    else: 
+        result = app.invoke({
+            "messages": [HumanMessage(content=user_input)]
+        }, config=config)
+
+        print("AI: " + result["messages"][-1].content)
+
+snapshot = app.get_state(config=config)
+history = app.get_state_history(config=config)
+print(result)
+
+result["messages"] = [message_to_dict(m) for m in result["messages"]]
+with open("03_responses.json", "w", encoding="utf-8") as f:
+    json.dump(result, f, ensure_ascii=False)

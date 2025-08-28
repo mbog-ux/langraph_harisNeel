@@ -72,7 +72,7 @@ while True:
         # with open("response.json", "w", encoding="utf-8") as f:
         #     f.write(json.dump(response))
 
-# print(f'\nAI: {result.content}')
+# print(f'\nAI: {result.content}') 
 # print('\n')
 
 # print(result.model_dump_json())

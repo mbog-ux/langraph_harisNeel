@@ -5,13 +5,16 @@ from langchain_openai import ChatOpenAI
 from langgraph.graph.message import add_messages
 from langchain_core.messages import HumanMessage
 from langgraph.checkpoint.memory import MemorySaver
+from langgraph.checkpoint.sqlite import SqliteSaver
 from langchain_core.messages.base import message_to_dict
 import json
+import sqlite3
 
 #https://langchain-ai.github.io/langgraph/concepts/persistence/
 
 load_dotenv()
-memory = MemorySaver() 
+sqlite_conn = sqlite3.connect('checkpoint.sqlite',check_same_thread = False)
+memory = SqliteSaver(sqlite_conn) 
 
 class AgentState(TypedDict):
     messages: Annotated[list,add_messages]

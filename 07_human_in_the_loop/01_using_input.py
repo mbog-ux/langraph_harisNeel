@@ -12,12 +12,10 @@ class AgentState(TypedDict):
 llm = ChatOpenAI(model='gpt-4o-mini')
 
 # Define nodes
-
 GENERATE_POST       = 'generate_post'
 GET_REVIEW_DECISION = 'get_review_decision'
 POST                = 'post'
 COLLECT_FEEDBACK    = 'collect_feedback'
-
 
 def generate_post(state: AgentState) -> AgentState:
     return {
@@ -40,38 +38,40 @@ def get_review_decision(state: AgentState) -> AgentState:
 def collect_feedback(state: AgentState) -> AgentState:
     user_feedback = input('Provide your feedback: ')
     return {
-        'message':[HumanMessage(content = user_feedback )]
+        'messages':[HumanMessage(content = user_feedback)]
     }
 
 def post_node(state: AgentState) -> AgentState:
-    print('Doing following post: \n')
+    print('Final LinkedIn post: \n')
     print(state['messages'][-1].content)
     print('\nPost has been aproved and posted')
 
-    return state
-
-
 graph = StateGraph(AgentState)
 
-graph.add_node("generate_post", generate_post)
-graph.add_node("collect_feedback", collect_feedback)
-graph.add_node("get_review_decision", get_review_decision)  # now a real node
-graph.add_node("post_node", post_node)
+graph.add_node('generate_post', generate_post)
+# graph.add_node('get_review_decision', get_review_decision)
+graph.add_node('collect_feedback', collect_feedback)
+graph.add_node('post_node', post_node)
 
-
-graph.add_edge(START, "generate_post")
-graph.add_edge("generate_post", "get_review_decision")
+graph.add_edge(START,'generate_post')
 graph.add_conditional_edges(
-    "get_review_decision",
-    get_review_decision,                 # router reads state produced by node
+    'generate_post',
+    get_review_decision,
     {
-        "post": "post_node",
-        "feedback": "collect_feedback",
-    },
+        'post':'post_node',
+        'feedback':'collect_feedback'
+    }
 )
-graph.add_edge("collect_feedback", "generate_post")
-graph.add_edge("post_node", END)
+graph.add_edge('collect_feedback', 'generate_post')
+graph.add_edge('post_node',END)
 
 app   = graph.compile()
 
 app.get_graph().draw_mermaid_png(output_file_path='01_graph.png')
+
+response = app.invoke({
+    "messages":[HumanMessage(content = "Write me a LinkedIn post on content taking over AI agents")]
+})
+
+print(response)
+print(len(response["messages"]))

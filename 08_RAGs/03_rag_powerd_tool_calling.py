@@ -1,5 +1,5 @@
 from langchain.schema import Document
-from langchain_openai import OpenAIEmbeddings
+from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_community.vectorstores import  Chroma
 from dotenv import load_dotenv
 load_dotenv()
@@ -38,15 +38,15 @@ retriever.invoke("Who is the owner and what are the timings?")
 
 
 from langchain.tools.retriever import create_retriever_tool
-from langchain_core import tools
+from langchain_core.tools import tool
 
 retriever_tool = create_retriever_tool(
-    retriever==retriever,
+    retriever=retriever,
     name = 'retriever_tool',
     description = 'Information related to Gym Histroy and Founder Operating Hours, Membership, Plans, Fitnsess classes, trainers or faiciliteis'
 )
 
-@tools
+@tool
 def off_topic():
     """
     Catch all off topic questions NOT related to Performance Gym to Gym Histroy and Founder Operating Hours, Membership, Plans, Fitnsess classes, trainers or faiciliteis
@@ -54,3 +54,50 @@ def off_topic():
     return 'Forbidden - do not respond to the user'
 
 tools = [retriever_tool,off_topic]
+
+from typing import TypedDict, Annotated, Sequence
+from langchain_core.messages import BaseMessage, HumanMessage
+from langgraph.graph import StateGraph, END, add_messages
+from langgraph.prebuilt import ToolNode
+
+class AgentState(TypedDict):
+    messages : Annotated[Sequence[BaseMessage],add_messages]
+
+def agent(state: AgentState)-> AgentState:
+    messages = state['messages']
+    model = ChatOpenAI(model='gpt-4o-mini')
+    model = model.bind_tools(tools)
+    response = model.invoke(messages)
+    return {'messages':[response]}
+
+def should_continue(state: AgentState):
+    if hasattr(state['messages'][-1],'tool_calls') and len(state['messages'][-1].tool_calls) > 0:
+        return 'continue'
+    else:
+        return 'end'
+
+workflow = StateGraph(AgentState)
+tool_node = ToolNode(tools = tools)
+
+workflow.set_entry_point('agent')
+workflow.add_node('agent',agent)
+workflow.add_node('tools',tool_node)
+
+workflow.add_conditional_edges(
+    'agent',
+    should_continue,
+    {
+        'continue':'tools',
+        'end':END
+    }
+)
+
+workflow.add_edge('tools','agent')
+
+graph = workflow.compile()
+graph.get_graph().draw_mermaid_png(output_file_path='03_graph.png')
+# response = graph.invoke(input = {'messages': [HumanMessage(content = "Who founded the performance gym?")]})
+response = graph.invoke(input = {'messages': [HumanMessage(content = "What is apple price?")]})
+
+
+print(response)

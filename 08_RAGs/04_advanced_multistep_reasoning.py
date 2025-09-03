@@ -98,10 +98,10 @@ def question_rewritter(state: AgentState):
         rephrase_prompt = ChatPromptTemplate.from_messages(messages=messages)
         llm = ChatOpenAI(model='gpt-4o-mini')
 
-        prompt= rephrase_prompt.format()
+        prompt = rephrase_prompt.format()
         response = llm.invoke(prompt)
         better_question = response.content.strip()
-        print(f"[question_rewriter] Rephrased qeustion:\n",better_question )
+        print(f"[question_rewriter] Rephrased qeustion:\n",better_question)
         state['rephrased_question'] = better_question
     else:
         state['rephrased_question'] = state['question'].content

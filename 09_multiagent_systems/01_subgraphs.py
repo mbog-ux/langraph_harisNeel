@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage
 from langgraph.graph import StateGraph, END, add_messages
 from typing import TypedDict, Annotated
 
@@ -30,12 +31,12 @@ def tool_router(state: ChildState):
         return 'end'
     
 
-workflow = StateGraph(ChildState)
+subgraph = StateGraph(ChildState)
 
-workflow.set_entry_point('agent')
-workflow.add_node('agent',agent)
-workflow.add_node('tools',ToolNode(tools=tools))
-workflow.add_conditional_edges(
+subgraph.set_entry_point('agent')
+subgraph.add_node('agent',agent)
+subgraph.add_node('tools',ToolNode(tools=tools))
+subgraph.add_conditional_edges(
     'agent',
     tool_router,
     {
@@ -43,9 +44,64 @@ workflow.add_conditional_edges(
         'end':END
     }
 )
-workflow.add_edge('tools','agent')
+subgraph.add_edge('tools','agent')
 
 
-graph = workflow.compile()
+search_app = subgraph.compile()
 
-graph.get_graph().draw_mermaid_png(output_file_path='01_graph.png')
+search_app.get_graph().draw_mermaid_png(output_file_path='01_graph_child.png')
+
+# response = search_app.invoke({
+#     "messages": [HumanMessage(content='What is the wheather in milan now')]
+# })
+
+# print(response['messages'][-1].content)
+
+### Direct Embeddening
+class ParentState(TypedDict):
+    messages: Annotated[list, add_messages]
+
+parent_graph = StateGraph(ParentState)
+
+parent_graph.add_node('search_app', search_app)
+parent_graph.set_entry_point('search_app')
+parent_graph.set_finish_point('search_app')
+
+parent_graph = parent_graph.compile()
+
+# response = parent_graph.invoke({
+#     "messages": [HumanMessage(content='What is the wheather in milan now')]
+# })
+
+# print(response['messages'][-1].content)
+
+
+### By transformation
+
+class ParentState(TypedDict):
+    query: str
+    response: str
+
+def search_agent(state: ParentState)->ParentState:
+
+    subgraph_input = {
+        "messages" : [HumanMessage(content=state['query'])]
+    }
+    response = search_app.invoke(subgraph_input)
+    return {
+        "response":response['messages'][-1].content
+    }
+
+parent_graph = StateGraph(ParentState)
+
+parent_graph.add_node('search_agent', search_agent)
+parent_graph.set_entry_point('search_agent')
+parent_graph.set_finish_point('search_agent')
+parent_graph = parent_graph.compile()
+
+response = parent_graph.invoke({
+    "query": 'What is the wheather in milan now',
+    "response":""
+})
+
+print(response)

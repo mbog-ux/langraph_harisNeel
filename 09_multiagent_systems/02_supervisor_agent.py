@@ -232,7 +232,6 @@ graph.add_node("enhancer", enhancer_node)
 graph.add_node("researcher", research_node) 
 graph.add_node("coder", code_node) 
 graph.add_node("validator", validator_node)  
-
 graph.add_edge(START, "supervisor")  
 app = graph.compile()
 
